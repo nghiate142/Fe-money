@@ -19,19 +19,34 @@ npm run dev
 
 Mở http://localhost:5173 và đăng nhập bằng tài khoản đã đặt ở backend.
 
-## Chạy trên server
+## Deploy bằng Docker
+
+Repo này có sẵn [Dockerfile](Dockerfile) và [nginx.conf](nginx.conf), nhưng **không chạy
+riêng lẻ** — nó được `docker-compose.yml` bên [Be-money](https://github.com/nghiate142/Be-money)
+build kèm. Xem hướng dẫn deploy ở README của repo đó.
+
+Image gồm 2 tầng: build bằng Node rồi phục vụ `dist/` bằng nginx. nginx cũng proxy
+`/api/` sang container backend, nên trình duyệt gọi API cùng origin — không cần biết
+domain lúc build và không dính CORS.
+
+## Deploy thủ công (không Docker)
 
 ```bash
 npm ci
 npm run build
 ```
 
-`dist/` là site tĩnh, trỏ nginx/Caddy vào đó. Nhớ đặt `VITE_API_URL` **trước khi build**
-— Vite nhúng biến này vào bundle lúc build, sửa sau khi build không có tác dụng:
+`dist/` là site tĩnh, trỏ nginx/Caddy vào đó.
+
+Đặt `VITE_API_URL` **trước khi build** — Vite nhúng biến này vào bundle lúc build, sửa
+sau khi build không có tác dụng:
 
 ```bash
 VITE_API_URL=https://api.money.example.com npm run build
 ```
+
+Nếu web server proxy `/api` sang backend thì để `VITE_API_URL=/api`, gọn hơn và không
+dính CORS.
 
 App dùng client-side routing, nên web server phải fallback mọi đường dẫn về
 `index.html`. Với nginx:
@@ -42,8 +57,8 @@ location / {
 }
 ```
 
-Backend cũng phải đặt `WEB_ORIGIN` đúng bằng origin của site này, nếu không trình duyệt
-sẽ chặn vì CORS.
+Nếu frontend và backend khác origin, backend phải đặt `WEB_ORIGIN` đúng bằng origin của
+site này, nếu không trình duyệt sẽ chặn vì CORS.
 
 ## Cấu trúc
 
