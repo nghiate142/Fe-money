@@ -81,6 +81,14 @@ export function ProjectsPage() {
     onError: (e) => alert(errorMessage(e)),
   });
 
+  // Đóng = ghi ngày đóng, mở lại = xoá ngày đóng. Không có cột trạng thái riêng.
+  const setClosed = useMutation({
+    mutationFn: ({ id, closedAt }: { id: number; closedAt: string | null }) =>
+      api.patch(`/projects/${id}`, { closedAt }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onError: (e) => alert(errorMessage(e)),
+  });
+
   const data = list.data;
 
   return (
@@ -134,7 +142,7 @@ export function ProjectsPage() {
                       )}
                       {/* Cột Trạng thái ẩn trên điện thoại — nhắc lại ở đây. */}
                       <div className="text-[11px] text-faint sm:hidden">
-                        {p.closedAt ? 'Đã đóng' : 'Đang làm'}
+                        {p.closedAt ? `Đã đóng ${dayVN(p.closedAt)}` : 'Đang làm'}
                       </div>
                     </td>
                     <td
@@ -142,12 +150,28 @@ export function ProjectsPage() {
                     >
                       {dayVN(p.startedAt)}
                     </td>
-                    <td className={`${tdCls} ${colSm}`}>
-                      {p.closedAt ? (
-                        <Badge>Đã đóng</Badge>
-                      ) : (
-                        <Badge tone="in">Đang làm</Badge>
-                      )}
+                    <td className={`${tdCls} ${colSm} whitespace-nowrap`}>
+                      {/* Bấm thẳng vào badge để đóng / mở lại, khỏi vào form Sửa. */}
+                      <button
+                        type="button"
+                        title={
+                          p.closedAt
+                            ? `Đóng ngày ${dayVN(p.closedAt)} — bấm để mở lại`
+                            : 'Bấm để kết thúc công việc'
+                        }
+                        disabled={setClosed.isPending}
+                        onClick={() => {
+                          if (p.closedAt) return setClosed.mutate({ id: p.id, closedAt: null });
+                          if (confirm(`Kết thúc "${p.name}" hôm nay?`))
+                            setClosed.mutate({ id: p.id, closedAt: today() });
+                        }}
+                      >
+                        {p.closedAt ? (
+                          <Badge>Đã đóng {dayVN(p.closedAt)}</Badge>
+                        ) : (
+                          <Badge tone="in">Đang làm</Badge>
+                        )}
+                      </button>
                     </td>
                     <td className={`${tdCls} ${colSm} text-right`}>
                       <Money value={p.income ?? 0} signed="in" />
