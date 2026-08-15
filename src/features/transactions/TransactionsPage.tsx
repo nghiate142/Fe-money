@@ -9,6 +9,7 @@ import {
   type Person,
   type Project,
   type RateResult,
+  type ScanResult,
   type Transaction,
 } from '../../lib/api';
 
@@ -40,7 +41,7 @@ import {
   thCls,
   trCls,
 } from '../../components/ui';
-import { Download, Plus } from 'lucide-react';
+import { Camera, Download, Plus } from 'lucide-react';
 import { today } from '../../lib/format';
 
 const DEFAULTS = {
@@ -454,6 +455,37 @@ function TransactionForm({
   const fee = Math.round(Number(form.fee || 0));
   const preview = Math.round(Number(form.amount || 0) * rate) + fee;
 
+  // Ảnh hoá đơn / biến động số dư -> điền sẵn form. Chỉ gợi ý, người dùng vẫn phải bấm Lưu.
+  const [scanNote, setScanNote] = useState<string | null>(null);
+  const scan = useMutation({
+    mutationFn: async (file: File) => {
+      const body = new FormData();
+      body.append('file', file);
+      return (await api.post<ScanResult>('/scan/transaction', body)).data;
+    },
+    onSuccess: (r) => {
+      setForm((f) => ({
+        ...f,
+        date: r.date ?? f.date,
+        kind: r.kind,
+        currency: r.currency,
+        amount: r.amount ? String(r.amount) : f.amount,
+        fee: r.fee ? String(r.fee) : f.fee,
+        // Danh mục đúng chiều tiền mới giữ; sai chiều thì để người dùng tự chọn.
+        categoryId: r.categoryId ? String(r.categoryId) : '',
+        personId: r.personId ? String(r.personId) : f.personId,
+        note: r.note || f.note,
+      }));
+      setScanNote(
+        r.warning ??
+          (r.confidence === 'high'
+            ? 'Đã điền từ ảnh — kiểm tra lại rồi bấm Lưu.'
+            : 'Đọc được nhưng không chắc chắn — kiểm tra kỹ số tiền và chiều tiền.'),
+      );
+    },
+    onError: (e) => alert(errorMessage(e)),
+  });
+
   const save = useMutation({
     mutationFn: () => {
       const body = {
@@ -490,6 +522,27 @@ function TransactionForm({
           save.mutate();
         }}
       >
+        {/* capture="environment" để điện thoại mở thẳng camera sau. */}
+        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-line-strong px-3 py-2.5 text-sm text-muted transition-colors hover:border-brand hover:text-brand">
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            disabled={scan.isPending}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = ''; // chọn lại đúng ảnh cũ vẫn kích hoạt onChange
+              if (file) scan.mutate(file);
+            }}
+          />
+          <Camera size={16} />
+          {scan.isPending ? 'Đang đọc ảnh…' : 'Chụp / chọn ảnh hoá đơn để điền sẵn'}
+        </label>
+        {scanNote && (
+          <p className="rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn">{scanNote}</p>
+        )}
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Ngày">
             <Input

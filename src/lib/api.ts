@@ -199,3 +199,18 @@ export type Debt = {
   remaining: number;
   status: DebtStatus;
 };
+
+/** Kết quả đọc ảnh hoá đơn — chỉ để điền sẵn form, không tự ghi sổ. */
+export type ScanResult = {
+  date: string | null;
+  kind: Kind;
+  currency: string;
+  /** Đơn vị lớn: 120.5 USD, 3000000 VND. */
+  amount: number;
+  fee: number;
+  categoryId: number | null;
+  personId: number | null;
+  note: string;
+  confidence: 'high' | 'medium' | 'low';
+  warning: string | null;
+};
