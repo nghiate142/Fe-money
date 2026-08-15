@@ -370,6 +370,8 @@ function TransactionForm({
     // Hiển thị theo đơn vị lớn: USD nhập 120.50, VND nhập 3000000.
     amount: value ? String(toMajor(value.originalAmount, value.currency, currencies.data)) : '',
     rate: value ? String(value.rate) : '',
+    // Phí luôn tính bằng VND — ngân hàng thu phí bằng tiền Việt.
+    fee: value?.fee ? String(value.fee) : '',
     categoryId: value ? String(value.categoryId) : '',
     projectId: value?.projectId ? String(value.projectId) : '',
     note: value?.note ?? '',
@@ -396,7 +398,8 @@ function TransactionForm({
   }, [rateQuery.data]);
 
   const rate = isForeign ? Number(form.rate || 0) : 1;
-  const preview = Math.round(Number(form.amount || 0) * rate);
+  const fee = Math.round(Number(form.fee || 0));
+  const preview = Math.round(Number(form.amount || 0) * rate) + fee;
 
   const save = useMutation({
     mutationFn: () => {
@@ -407,6 +410,7 @@ function TransactionForm({
         amount: Math.round(Number(form.amount) * 10 ** decimals),
         currency: form.currency,
         ...(isForeign ? { rate } : {}),
+        fee,
         categoryId: Number(form.categoryId),
         projectId: form.projectId ? Number(form.projectId) : null,
         note: form.note || undefined,
@@ -488,6 +492,22 @@ function TransactionForm({
           </div>
         </div>
 
+        <Field label="Phí giao dịch (VND, bỏ trống nếu không có)">
+          <Input
+            type="number"
+            min={0}
+            step={1000}
+            placeholder="0"
+            value={form.fee}
+            onChange={(e) => setForm({ ...form, fee: e.target.value })}
+          />
+        </Field>
+        {!isForeign && fee > 0 && (
+          <p className="text-sm">
+            Ghi vào sổ: <Money value={preview} className="font-semibold" /> đ
+          </p>
+        )}
+
         {isForeign && (
           <div className="rounded-lg border border-line bg-canvas p-3">
             <Field label={`Tỷ giá 1 ${form.currency} = ? VND`}>
@@ -520,6 +540,9 @@ function TransactionForm({
             </p>
             <p className="mt-2 border-t border-line pt-2 text-sm">
               Ghi vào sổ: <Money value={preview} className="font-semibold" /> đ
+              {fee > 0 && (
+                <span className="text-muted"> (gồm {fee.toLocaleString('vi-VN')} đ phí)</span>
+              )}
             </p>
           </div>
         )}

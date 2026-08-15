@@ -83,6 +83,8 @@ export type Transaction = {
   currency: string;
   originalAmount: number;
   rate: number;
+  /** Phí giao dịch (VND), đã cộng trong `amount`. */
+  fee: number;
   kind: Kind;
   nature: Nature;
   note: string | null;
