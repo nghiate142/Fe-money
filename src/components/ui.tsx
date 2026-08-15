@@ -1,14 +1,61 @@
 import type { ReactNode, SelectHTMLAttributes, InputHTMLAttributes } from 'react';
-import { ChevronLeft, ChevronRight, Inbox, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Inbox, Pencil, Trash2, X } from 'lucide-react';
 
 /* ---------- lớp dùng chung cho bảng ---------- */
 
 export const tableCls = 'w-full text-sm';
 export const theadCls =
   'text-left text-[11px] font-semibold uppercase tracking-wider text-faint';
-export const thCls = 'px-3 py-2.5 font-semibold whitespace-nowrap';
+export const thCls = 'px-2 py-2.5 font-semibold whitespace-nowrap sm:px-3';
 export const trCls = 'border-t border-line transition-colors hover:bg-canvas';
-export const tdCls = 'px-3 py-2.5 align-middle';
+export const tdCls = 'px-2 py-2.5 align-middle sm:px-3';
+
+/**
+ * Ngày trong bảng: `dd/mm`, phần `/yyyy` ẩn trên điện thoại —
+ * bảng tiền hẹp, năm là thứ bỏ được đầu tiên.
+ */
+export function DayCell({ iso }: { iso: string | null | undefined }) {
+  if (!iso) return <>—</>;
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return (
+    <>
+      {d}/{m}
+      <span className="hidden sm:inline">/{y}</span>
+    </>
+  );
+}
+
+/**
+ * Sửa/Xoá cuối dòng. Điện thoại: icon và luôn hiện (không có hover để rê chuột).
+ * Màn rộng: chữ, chỉ hiện khi rê vào dòng cho bảng đỡ rối.
+ */
+export function RowActions({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <span className="flex justify-end gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+      <Button size="sm" variant="ghost" onClick={onEdit} aria-label="Sửa">
+        <Pencil size={14} className="sm:hidden" />
+        <span className="hidden sm:inline">Sửa</span>
+      </Button>
+      <Button size="sm" variant="ghost" onClick={onDelete} aria-label="Xoá">
+        <Trash2 size={14} className="sm:hidden" />
+        <span className="hidden sm:inline">Xoá</span>
+      </Button>
+    </span>
+  );
+}
+
+/**
+ * Cột phụ: ẩn trên điện thoại để bảng không phải cuộn ngang.
+ * Chỉ dùng cho thông tin đã có ở chỗ khác hoặc không cần khi lướt nhanh.
+ */
+export const colSm = 'hidden sm:table-cell';
+export const colMd = 'hidden md:table-cell';
 
 /* ---------- khối ---------- */
 
@@ -42,7 +89,13 @@ export function Card({
   );
 }
 
-export function SectionTitle({ children, hint }: { children: ReactNode; hint?: string }) {
+export function SectionTitle({
+  children,
+  hint,
+}: {
+  children: ReactNode;
+  hint?: string;
+}) {
   return (
     <div className="mb-2.5 flex items-baseline gap-2">
       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
@@ -85,7 +138,10 @@ export function Button({
 const fieldBase =
   'w-full rounded-lg border border-line-strong bg-surface px-2.5 py-1.5 text-sm outline-none transition-shadow placeholder:text-faint focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:bg-canvas disabled:text-muted';
 
-export function Input({ className = '', ...props }: InputHTMLAttributes<HTMLInputElement>) {
+export function Input({
+  className = '',
+  ...props
+}: InputHTMLAttributes<HTMLInputElement>) {
   const numeric = props.type === 'number' ? 'tnum' : '';
   return <input {...props} className={`${fieldBase} ${numeric} ${className}`} />;
 }
@@ -133,20 +189,26 @@ export function Modal({
   if (!open) return null;
   return (
     <div
-      className="animate-fade fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/35 p-4 backdrop-blur-[2px]"
+      className="animate-fade fixed inset-0 z-50 flex items-end justify-center bg-ink/35 backdrop-blur-[2px] sm:items-start sm:overflow-y-auto sm:p-4"
       onClick={onClose}
     >
+      {/* Điện thoại: dán đáy màn hình, cao tối đa 92vh và tự cuộn phần thân —
+          bàn phím bật lên vẫn thấy nút Lưu. Màn rộng: hộp giữa như cũ. */}
       <div
-        className={`animate-pop mt-8 mb-8 w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} rounded-2xl bg-surface shadow-pop`}
+        className={`animate-pop flex max-h-[92dvh] w-full flex-col rounded-t-2xl bg-surface shadow-pop sm:mt-8 sm:mb-8 sm:max-h-none sm:rounded-2xl ${
+          wide ? 'sm:max-w-2xl' : 'sm:max-w-lg'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <header className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3.5 sm:px-5">
           <h3 className="font-semibold">{title}</h3>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Đóng">
             <X size={16} />
           </Button>
         </header>
-        <div className="p-5">{children}</div>
+        <div className="scroll-slim overflow-y-auto p-4 sm:overflow-visible sm:p-5">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -306,7 +368,7 @@ export function Pager({
   const pages = Math.max(1, Math.ceil(total / limit));
   if (total === 0) return null;
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-xs text-muted">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-3 py-2.5 text-xs text-muted sm:px-4">
       <span>
         <b className="tnum text-ink">{total}</b> bản ghi · trang {page}/{pages}
       </span>

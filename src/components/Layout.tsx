@@ -33,7 +33,9 @@ export function Layout({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
-  const current = TABS.find((t) => (t.end ? pathname === t.to : pathname.startsWith(t.to)));
+  const current = TABS.find((t) =>
+    t.end ? pathname === t.to : pathname.startsWith(t.to),
+  );
 
   // Số dư luôn hiện trên đầu — con số quan trọng nhất, không phải bấm vào đâu để xem.
   const balance = useQuery({
@@ -83,7 +85,7 @@ export function Layout({
 
       <div className="min-w-0">
         <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur">
-          <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
             <Button
               variant="ghost"
               className="lg:hidden"
@@ -99,7 +101,7 @@ export function Layout({
               {current?.label ?? 'Sổ thu chi'}
             </h1>
 
-            <div className="ml-auto flex items-center gap-2 rounded-lg bg-canvas px-3 py-1.5">
+            <div className="ml-auto flex min-w-0 items-center gap-1.5 rounded-lg bg-canvas px-2 py-1.5 sm:gap-2 sm:px-3">
               <span className="text-[11px] font-medium text-muted">Số dư</span>
               <span className="text-sm font-semibold">
                 {balance.data ? (
@@ -115,14 +117,18 @@ export function Layout({
           {menuOpen && (
             <div className="border-t border-line p-3 lg:hidden">
               {nav(() => setMenuOpen(false))}
-              <Button variant="ghost" className="mt-1 w-full justify-start" onClick={logout}>
+              <Button
+                variant="ghost"
+                className="mt-1 w-full justify-start"
+                onClick={logout}
+              >
                 <LogOut size={16} /> Đăng xuất
               </Button>
             </div>
           )}
         </header>
 
-        <main className="mx-auto max-w-[1400px] p-4 lg:p-6">{children}</main>
+        <main className="mx-auto max-w-[1400px] p-3 sm:p-4 lg:p-6">{children}</main>
       </div>
     </div>
   );

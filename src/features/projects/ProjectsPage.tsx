@@ -14,8 +14,11 @@ import {
   Modal,
   Money,
   Pager,
+  RowActions,
   Skeleton,
   tableCls,
+  colMd,
+  colSm,
   tdCls,
   theadCls,
   thCls,
@@ -107,10 +110,10 @@ export function ProjectsPage() {
               <thead className={theadCls}>
                 <tr>
                   <th className={thCls}>Tên</th>
-                  <th className={thCls}>Bắt đầu</th>
-                  <th className={thCls}>Trạng thái</th>
-                  <th className={`${thCls} text-right`}>Thu</th>
-                  <th className={`${thCls} text-right`}>Chi</th>
+                  <th className={`${thCls} ${colMd}`}>Bắt đầu</th>
+                  <th className={`${thCls} ${colSm}`}>Trạng thái</th>
+                  <th className={`${thCls} ${colSm} text-right`}>Thu</th>
+                  <th className={`${thCls} ${colSm} text-right`}>Chi</th>
                   <th className={`${thCls} text-right`}>Lãi/Lỗ</th>
                   <th className={thCls} />
                 </tr>
@@ -118,47 +121,50 @@ export function ProjectsPage() {
               <tbody>
                 {data.items.map((p) => (
                   <tr key={p.id} className={`${trCls} group`}>
-                    <td className={tdCls}>
+                    {/* max-w để tên dài không đẩy bảng rộng quá màn hình điện thoại. */}
+                    <td className={`${tdCls} max-w-[38vw] md:max-w-none`}>
                       <Link
-                        className="font-medium hover:text-brand hover:underline"
+                        className="block truncate font-medium hover:text-brand hover:underline md:overflow-visible"
                         to={`/transactions?projectId=${p.id}`}
                       >
                         {p.name}
                       </Link>
-                      {p.note && <div className="text-xs text-faint">{p.note}</div>}
+                      {p.note && (
+                        <div className="truncate text-xs text-faint">{p.note}</div>
+                      )}
+                      {/* Cột Trạng thái ẩn trên điện thoại — nhắc lại ở đây. */}
+                      <div className="text-[11px] text-faint sm:hidden">
+                        {p.closedAt ? 'Đã đóng' : 'Đang làm'}
+                      </div>
                     </td>
-                    <td className={`${tdCls} tnum whitespace-nowrap text-muted`}>
+                    <td
+                      className={`${tdCls} ${colMd} tnum whitespace-nowrap text-muted`}
+                    >
                       {dayVN(p.startedAt)}
                     </td>
-                    <td className={tdCls}>
+                    <td className={`${tdCls} ${colSm}`}>
                       {p.closedAt ? (
                         <Badge>Đã đóng</Badge>
                       ) : (
                         <Badge tone="in">Đang làm</Badge>
                       )}
                     </td>
-                    <td className={`${tdCls} text-right`}>
+                    <td className={`${tdCls} ${colSm} text-right`}>
                       <Money value={p.income ?? 0} signed="in" />
                     </td>
-                    <td className={`${tdCls} text-right`}>
+                    <td className={`${tdCls} ${colSm} text-right`}>
                       <Money value={p.expense ?? 0} signed="out" />
                     </td>
                     <td className={`${tdCls} text-right font-semibold`}>
                       <Money value={p.profit ?? 0} />
                     </td>
                     <td className={`${tdCls} text-right whitespace-nowrap`}>
-                      <span className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>
-                          Sửa
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => confirm('Xoá công việc này?') && remove.mutate(p.id)}
-                        >
-                          Xoá
-                        </Button>
-                      </span>
+                      <RowActions
+                        onEdit={() => setEditing(p)}
+                        onDelete={() =>
+                          confirm('Xoá công việc này?') && remove.mutate(p.id)
+                        }
+                      />
                     </td>
                   </tr>
                 ))}
@@ -238,7 +244,7 @@ function ProjectForm({
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Bắt đầu">
             <Input
               type="date"

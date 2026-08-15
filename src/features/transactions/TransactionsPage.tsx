@@ -22,12 +22,15 @@ import {
   Badge,
   Button,
   Card,
+  colMd,
   Empty,
   Field,
   Input,
   Modal,
+  DayCell,
   Money,
   Pager,
+  RowActions,
   Select,
   Skeleton,
   tableCls,
@@ -37,7 +40,7 @@ import {
   trCls,
 } from '../../components/ui';
 import { Download, Plus } from 'lucide-react';
-import { dayVN, today } from '../../lib/format';
+import { today } from '../../lib/format';
 
 const DEFAULTS = {
   q: '',
@@ -197,10 +200,20 @@ export function TransactionsPage() {
           data ? (
             <span className="flex flex-wrap items-center gap-x-4 gap-y-1 font-normal">
               <span>
-                Vào <Money value={data.totals.income} signed="in" className="font-semibold" />
+                Vào{' '}
+                <Money
+                  value={data.totals.income}
+                  signed="in"
+                  className="font-semibold"
+                />
               </span>
               <span>
-                Ra <Money value={data.totals.expense} signed="out" className="font-semibold" />
+                Ra{' '}
+                <Money
+                  value={data.totals.expense}
+                  signed="out"
+                  className="font-semibold"
+                />
               </span>
               <span className="text-muted">
                 Chênh lệch{' '}
@@ -233,8 +246,8 @@ export function TransactionsPage() {
                 <tr>
                   <th className={thCls}>Ngày</th>
                   <th className={thCls}>Danh mục</th>
-                  <th className={thCls}>Công việc</th>
-                  <th className={thCls}>Ghi chú</th>
+                  <th className={`${thCls} ${colMd}`}>Công việc</th>
+                  <th className={`${thCls} ${colMd}`}>Ghi chú</th>
                   <th className={`${thCls} text-right`}>Số tiền</th>
                   <th className={thCls} />
                 </tr>
@@ -245,10 +258,15 @@ export function TransactionsPage() {
                   return (
                     <tr key={t.id} className={`${trCls} group`}>
                       <td className={`${tdCls} tnum whitespace-nowrap text-muted`}>
-                        {dayVN(t.date)}
+                        <DayCell iso={t.date} />
                       </td>
-                      <td className={tdCls}>
+                      {/* max-w để dòng phụ dài không kéo giãn bảng ra ngoài màn hình. */}
+                      <td className={`${tdCls} max-w-[34vw] md:max-w-none`}>
                         <span className="font-medium">{t.category?.name}</span>
+                        {/* Cột Công việc / Ghi chú bị ẩn trên điện thoại — gộp vào đây. */}
+                        <div className="truncate text-[11px] text-faint md:hidden">
+                          {[t.project?.name, t.note].filter(Boolean).join(' · ')}
+                        </div>
                         {t.nature !== 'operating' &&
                           NATURE_LABEL[t.nature] !== t.category?.name && (
                             <Badge tone={t.nature === 'interest' ? 'warn' : 'brand'}>
@@ -256,10 +274,13 @@ export function TransactionsPage() {
                             </Badge>
                           )}
                       </td>
-                      <td className={`${tdCls} text-muted`}>
+                      <td className={`${tdCls} ${colMd} text-muted`}>
                         {t.project?.name ?? <span className="text-faint">Cá nhân</span>}
                       </td>
-                      <td className={`${tdCls} max-w-[22ch] truncate text-muted`} title={t.note ?? ''}>
+                      <td
+                        className={`${tdCls} ${colMd} max-w-[22ch] truncate text-muted`}
+                        title={t.note ?? ''}
+                      >
                         {t.note ?? ''}
                       </td>
                       <td className={`${tdCls} text-right whitespace-nowrap`}>
@@ -270,11 +291,19 @@ export function TransactionsPage() {
                         />
                         {t.currency !== 'VND' && (
                           // Số quy đổi là số vào sổ; số gốc chỉ để đối chiếu hoá đơn.
-                          <div className="tnum text-[11px] text-faint">
+                          <div
+                            className="tnum text-[11px] whitespace-normal text-faint"
+                            title={`Tỷ giá ${t.rate.toLocaleString('vi-VN')}`}
+                          >
                             {(t.originalAmount / 100).toLocaleString('vi-VN', {
                               minimumFractionDigits: 2,
                             })}{' '}
-                            {t.currency} @ {t.rate.toLocaleString('vi-VN')}
+                            {t.currency}
+                            {/* Tỷ giá dài, chỉ hiện khi đủ chỗ. */}
+                            <span className="hidden sm:inline">
+                              {' '}
+                              @ {t.rate.toLocaleString('vi-VN')}
+                            </span>
                           </div>
                         )}
                       </td>
@@ -285,20 +314,12 @@ export function TransactionsPage() {
                             từ khoản nợ
                           </Badge>
                         ) : (
-                          <span className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                            <Button size="sm" variant="ghost" onClick={() => setEditing(t)}>
-                              Sửa
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                confirm('Xoá giao dịch này?') && remove.mutate(t.id)
-                              }
-                            >
-                              Xoá
-                            </Button>
-                          </span>
+                          <RowActions
+                            onEdit={() => setEditing(t)}
+                            onDelete={() =>
+                              confirm('Xoá giao dịch này?') && remove.mutate(t.id)
+                            }
+                          />
                         )}
                       </td>
                     </tr>
@@ -335,7 +356,9 @@ export function TransactionsPage() {
 }
 
 async function downloadCsv(qs: string) {
-  const res = await api.get(`/reports/export.csv?${qs}`, { responseType: 'blob' });
+  const res = await api.get(`/reports/export.csv?${qs}`, {
+    responseType: 'blob',
+  });
   const url = URL.createObjectURL(res.data as Blob);
   const a = document.createElement('a');
   a.href = url;
@@ -368,7 +391,9 @@ function TransactionForm({
     kind: value?.kind ?? ('expense' as 'income' | 'expense'),
     currency: value?.currency ?? 'VND',
     // Hiển thị theo đơn vị lớn: USD nhập 120.50, VND nhập 3000000.
-    amount: value ? String(toMajor(value.originalAmount, value.currency, currencies.data)) : '',
+    amount: value
+      ? String(toMajor(value.originalAmount, value.currency, currencies.data))
+      : '',
     rate: value ? String(value.rate) : '',
     // Phí luôn tính bằng VND — ngân hàng thu phí bằng tiền Việt.
     fee: value?.fee ? String(value.fee) : '',
@@ -428,11 +453,7 @@ function TransactionForm({
   const options = categories.filter((c) => c.kind === form.kind && !c.code);
 
   return (
-    <Modal
-      open
-      title={value ? 'Sửa giao dịch' : 'Thêm giao dịch'}
-      onClose={onClose}
-    >
+    <Modal open title={value ? 'Sửa giao dịch' : 'Thêm giao dịch'} onClose={onClose}>
       <form
         className="space-y-3"
         onSubmit={(e) => {
@@ -440,7 +461,7 @@ function TransactionForm({
           save.mutate();
         }}
       >
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Ngày">
             <Input
               type="date"
@@ -465,17 +486,19 @@ function TransactionForm({
             </Select>
           </Field>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Tiền tệ">
             <Select
               value={form.currency}
               onChange={(e) => setForm({ ...form, currency: e.target.value, rate: '' })}
             >
-              {(currencies.data ?? [{ code: 'VND', name: 'VND', decimals: 0 }]).map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code}
-                </option>
-              ))}
+              {(currencies.data ?? [{ code: 'VND', name: 'VND', decimals: 0 }]).map(
+                (c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code}
+                  </option>
+                ),
+              )}
             </Select>
           </Field>
           <div className="col-span-2">
@@ -541,7 +564,10 @@ function TransactionForm({
             <p className="mt-2 border-t border-line pt-2 text-sm">
               Ghi vào sổ: <Money value={preview} className="font-semibold" /> đ
               {fee > 0 && (
-                <span className="text-muted"> (gồm {fee.toLocaleString('vi-VN')} đ phí)</span>
+                <span className="text-muted">
+                  {' '}
+                  (gồm {fee.toLocaleString('vi-VN')} đ phí)
+                </span>
               )}
             </p>
           </div>

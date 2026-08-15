@@ -31,6 +31,8 @@ import {
   SectionTitle,
   Stat,
   tableCls,
+  colMd,
+  colSm,
   tdCls,
   theadCls,
   thCls,
@@ -54,7 +56,15 @@ const FIELDS: FilterField[] = [
   { key: 'to', label: 'Đến ngày', type: 'date' },
 ];
 
-const COLORS = ['#5b5bd6', '#0f9b78', '#e0574f', '#d68b1e', '#8b5cf6', '#0891b2', '#db2777'];
+const COLORS = [
+  '#5b5bd6',
+  '#0f9b78',
+  '#e0574f',
+  '#d68b1e',
+  '#8b5cf6',
+  '#0891b2',
+  '#db2777',
+];
 
 type Block = { income: number; expense: number; net: number };
 type Overview = {
@@ -62,7 +72,12 @@ type Overview = {
   pnl: Block;
   business: Block;
   personal: Block;
-  debts: { iOwe: number; owesMe: number; overdue: number; interestPaid: number };
+  debts: {
+    iOwe: number;
+    owesMe: number;
+    overdue: number;
+    interestPaid: number;
+  };
   netWorth: number;
 };
 
@@ -77,30 +92,44 @@ export function OverviewPage() {
   const monthly = useQuery({
     queryKey: ['monthly', qs],
     queryFn: async () =>
-      (await api.get<{ month: string; income: number; expense: number }[]>(
-        `/reports/monthly?${qs}`,
-      )).data,
+      (
+        await api.get<{ month: string; income: number; expense: number }[]>(
+          `/reports/monthly?${qs}`,
+        )
+      ).data,
   });
   const byCategory = useQuery({
     queryKey: ['by-category', qs],
     queryFn: async () =>
-      (await api.get<{ name: string; kind: string; total: number }[]>(
-        `/reports/by-category?${qs}`,
-      )).data,
+      (
+        await api.get<{ name: string; kind: string; total: number }[]>(
+          `/reports/by-category?${qs}`,
+        )
+      ).data,
   });
   const byProject = useQuery({
     queryKey: ['by-project', qs],
     queryFn: async () =>
-      (await api.get<
-        { projectId: number | null; name: string; income: number; expense: number; profit: number }[]
-      >(`/reports/by-project?${qs}`)).data,
+      (
+        await api.get<
+          {
+            projectId: number | null;
+            name: string;
+            income: number;
+            expense: number;
+            profit: number;
+          }[]
+        >(`/reports/by-project?${qs}`)
+      ).data,
   });
   const byPerson = useQuery({
     queryKey: ['by-person'],
     queryFn: async () =>
-      (await api.get<{ personId: number; name: string; iOwe: number; owesMe: number }[]>(
-        '/reports/by-person',
-      )).data,
+      (
+        await api.get<
+          { personId: number; name: string; iOwe: number; owesMe: number }[]
+        >('/reports/by-person')
+      ).data,
   });
 
   const loans = useQuery({
@@ -144,9 +173,24 @@ export function OverviewPage() {
 
       {/* Khối 1 — tiền thật. Gồm cả vay và trả nợ, nên khớp tiền trong túi. */}
       <Section title="Tiền mặt" hint="gồm cả tiền vay và tiền trả nợ">
-        <Stat label="Số dư hiện tại" value={o?.cash.balance} big icon={<Banknote size={15} />} />
-        <Stat label="Vào (kỳ lọc)" value={o?.cash.income} tone="in" icon={<TrendingUp size={15} />} />
-        <Stat label="Ra (kỳ lọc)" value={o?.cash.expense} tone="out" icon={<TrendingDown size={15} />} />
+        <Stat
+          label="Số dư hiện tại"
+          value={o?.cash.balance}
+          big
+          icon={<Banknote size={15} />}
+        />
+        <Stat
+          label="Vào (kỳ lọc)"
+          value={o?.cash.income}
+          tone="in"
+          icon={<TrendingUp size={15} />}
+        />
+        <Stat
+          label="Ra (kỳ lọc)"
+          value={o?.cash.expense}
+          tone="out"
+          icon={<TrendingDown size={15} />}
+        />
         <Stat
           label="Tài sản ròng"
           value={o?.netWorth}
@@ -157,7 +201,12 @@ export function OverviewPage() {
 
       {/* Khối 2 — lãi lỗ. Bỏ vay/trả gốc vì không phải thu nhập/chi phí. */}
       <Section title="Lãi / lỗ" hint="không tính tiền vay và trả gốc">
-        <Stat label="Lãi/lỗ công việc" value={o?.business.net} big icon={<PiggyBank size={15} />} />
+        <Stat
+          label="Lãi/lỗ công việc"
+          value={o?.business.net}
+          big
+          icon={<PiggyBank size={15} />}
+        />
         <Stat label="Doanh thu công việc" value={o?.business.income} tone="in" />
         <Stat label="Chi phí công việc" value={o?.business.expense} tone="out" />
         <Stat label="Chi tiêu cá nhân" value={o?.personal.expense} tone="out" />
@@ -165,7 +214,12 @@ export function OverviewPage() {
 
       {/* Khối 3 — nợ. */}
       <Section title="Nợ">
-        <Stat label="Tôi đang nợ" value={o?.debts.iOwe} tone="out" icon={<HandCoins size={15} />} />
+        <Stat
+          label="Tôi đang nợ"
+          value={o?.debts.iOwe}
+          tone="out"
+          icon={<HandCoins size={15} />}
+        />
         <Stat label="Đang nợ tôi" value={o?.debts.owesMe} tone="in" />
         <Stat label="Trong đó quá hạn" value={o?.debts.overdue} tone="out" />
         <Stat label="Lãi vay đã trả" value={o?.debts.interestPaid} tone="out" />
@@ -173,7 +227,10 @@ export function OverviewPage() {
 
       {!!loans.data?.items.length && (
         <>
-          <Section title="Khoản vay có lịch trả" hint="ngân hàng, công ty tài chính, thấu chi">
+          <Section
+            title="Khoản vay có lịch trả"
+            hint="ngân hàng, công ty tài chính, thấu chi"
+          >
             <Stat
               label="Phải trả kỳ tới"
               value={loans.data.totals.monthlyPayment}
@@ -181,9 +238,17 @@ export function OverviewPage() {
               big
               icon={<CalendarClock size={15} />}
             />
-            <Stat label="Đang thiếu / quá hạn" value={loans.data.totals.overdue} tone="out" />
+            <Stat
+              label="Đang thiếu / quá hạn"
+              value={loans.data.totals.overdue}
+              tone="out"
+            />
             <Stat label="Dư nợ gốc" value={loans.data.totals.remaining} tone="out" />
-            <Stat label="Tổng lãi cả kỳ vay" value={loans.data.totals.interestLeft} tone="out" />
+            <Stat
+              label="Tổng lãi cả kỳ vay"
+              value={loans.data.totals.interestLeft}
+              tone="out"
+            />
           </Section>
 
           <div className="mb-4">
@@ -193,10 +258,10 @@ export function OverviewPage() {
                   <thead className={theadCls}>
                     <tr>
                       <th className={thCls}>Bên cho vay</th>
-                      <th className={thCls}>Hình thức</th>
-                      <th className={`${thCls} text-right`}>Dư nợ</th>
+                      <th className={`${thCls} ${colMd}`}>Hình thức</th>
+                      <th className={`${thCls} ${colSm} text-right`}>Dư nợ</th>
                       <th className={`${thCls} text-right`}>Kỳ tới</th>
-                      <th className={thCls}>Đến hạn</th>
+                      <th className={`${thCls} ${colSm}`}>Đến hạn</th>
                       <th className={`${thCls} text-right`}>Đang thiếu</th>
                     </tr>
                   </thead>
@@ -211,22 +276,29 @@ export function OverviewPage() {
                             {l.lender}
                           </Link>
                         </td>
-                        <td className={`${tdCls} text-xs text-muted`}>
+                        <td className={`${tdCls} ${colMd} text-xs text-muted`}>
                           {LOAN_TYPE_LABEL[l.loanType]}
-                          <span className="text-faint"> · {METHOD_LABEL[l.interestMethod]}</span>
+                          <span className="text-faint">
+                            {' '}
+                            · {METHOD_LABEL[l.interestMethod]}
+                          </span>
                         </td>
-                        <td className={`${tdCls} text-right`}>
+                        <td className={`${tdCls} ${colSm} text-right`}>
                           <Money value={l.remaining} />
                         </td>
                         <td className={`${tdCls} text-right font-semibold`}>
                           <Money value={l.nextPayment} />
                         </td>
-                        <td className={`${tdCls} tnum whitespace-nowrap text-muted`}>
+                        <td
+                          className={`${tdCls} ${colSm} tnum whitespace-nowrap text-muted`}
+                        >
                           {dayVN(l.nextDueDate)}
                         </td>
                         <td className={`${tdCls} text-right`}>
                           {l.overdueAmount ? (
-                            <Badge tone="out">{l.overdueAmount.toLocaleString('vi-VN')}</Badge>
+                            <Badge tone="out">
+                              {l.overdueAmount.toLocaleString('vi-VN')}
+                            </Badge>
                           ) : (
                             <span className="text-faint">—</span>
                           )}
@@ -248,13 +320,32 @@ export function OverviewPage() {
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={monthly.data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e6e8ef" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#e6e8ef"
+                />
                 <XAxis dataKey="month" fontSize={12} />
-                <YAxis fontSize={12} tickFormatter={(v) => (v / 1_000_000).toFixed(0) + 'tr'} />
+                <YAxis
+                  fontSize={12}
+                  tickFormatter={(v) => (v / 1_000_000).toFixed(0) + 'tr'}
+                />
                 <Tooltip formatter={(v: unknown) => money(Number(v)) + ' đ'} />
                 <Legend />
-                <Bar dataKey="income" name="Vào" fill="#0f9b78" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                <Bar dataKey="expense" name="Ra" fill="#e0574f" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Bar
+                  dataKey="income"
+                  name="Vào"
+                  fill="#0f9b78"
+                  radius={[4, 4, 0, 0]}
+                  isAnimationActive={false}
+                />
+                <Bar
+                  dataKey="expense"
+                  name="Ra"
+                  fill="#e0574f"
+                  radius={[4, 4, 0, 0]}
+                  isAnimationActive={false}
+                />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -292,8 +383,8 @@ export function OverviewPage() {
               <thead className={theadCls}>
                 <tr>
                   <th className={thCls}>Công việc</th>
-                  <th className={`${thCls} text-right`}>Thu</th>
-                  <th className={`${thCls} text-right`}>Chi</th>
+                  <th className={`${thCls} ${colSm} text-right`}>Thu</th>
+                  <th className={`${thCls} ${colSm} text-right`}>Chi</th>
                   <th className={`${thCls} text-right`}>Lãi/Lỗ</th>
                 </tr>
               </thead>
@@ -310,10 +401,10 @@ export function OverviewPage() {
                           {p.name}
                         </Link>
                       </td>
-                      <td className={`${tdCls} text-right`}>
+                      <td className={`${tdCls} ${colSm} text-right`}>
                         <Money value={p.income} signed="in" />
                       </td>
-                      <td className={`${tdCls} text-right`}>
+                      <td className={`${tdCls} ${colSm} text-right`}>
                         <Money value={p.expense} signed="out" />
                       </td>
                       <td className={`${tdCls} text-right font-semibold`}>
@@ -350,10 +441,18 @@ export function OverviewPage() {
                       </Link>
                     </td>
                     <td className={`${tdCls} text-right`}>
-                      {p.iOwe ? <Money value={p.iOwe} signed="out" /> : <span className="text-faint">—</span>}
+                      {p.iOwe ? (
+                        <Money value={p.iOwe} signed="out" />
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
                     </td>
                     <td className={`${tdCls} text-right`}>
-                      {p.owesMe ? <Money value={p.owesMe} signed="in" /> : <span className="text-faint">—</span>}
+                      {p.owesMe ? (
+                        <Money value={p.owesMe} signed="in" />
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

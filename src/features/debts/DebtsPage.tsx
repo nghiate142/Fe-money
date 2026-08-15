@@ -26,11 +26,14 @@ import {
   Field,
   Input,
   Modal,
+  DayCell,
   Money,
   Pager,
   Select,
   Skeleton,
   tableCls,
+  colMd,
+  colSm,
   tdCls,
   theadCls,
   thCls,
@@ -86,7 +89,8 @@ export function DebtsPage() {
   });
   const projects = useQuery({
     queryKey: ['projects', 'all'],
-    queryFn: async () => (await api.get<Page<Project>>('/projects?limit=200')).data.items,
+    queryFn: async () =>
+      (await api.get<Page<Project>>('/projects?limit=200')).data.items,
   });
 
   const qs = queryString(values);
@@ -97,7 +101,18 @@ export function DebtsPage() {
 
   // Nợ sinh ra giao dịch tiền, nên đổi nợ là số dư và báo cáo cũng đổi theo.
   const invalidate = () => {
-    for (const key of ['debts', 'schedule', 'people', 'transactions', 'overview', 'monthly', 'by-category', 'by-project', 'by-person', 'loans'])
+    for (const key of [
+      'debts',
+      'schedule',
+      'people',
+      'transactions',
+      'overview',
+      'monthly',
+      'by-category',
+      'by-project',
+      'by-person',
+      'loans',
+    ])
       qc.invalidateQueries({ queryKey: [key] });
   };
 
@@ -136,7 +151,10 @@ export function DebtsPage() {
       type: 'select',
       options: [
         { value: '', label: 'Tất cả' },
-        ...(people.data ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+        ...(people.data ?? []).map((p) => ({
+          value: String(p.id),
+          label: p.name,
+        })),
       ],
     },
     {
@@ -146,7 +164,10 @@ export function DebtsPage() {
       options: [
         { value: '', label: 'Tất cả' },
         { value: 'none', label: '(không thuộc việc nào)' },
-        ...(projects.data ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+        ...(projects.data ?? []).map((p) => ({
+          value: String(p.id),
+          label: p.name,
+        })),
       ],
     },
     {
@@ -173,7 +194,13 @@ export function DebtsPage() {
   const groups: [DebtStatus, Debt[]][] = values.status
     ? [[values.status as DebtStatus, data?.items ?? []]]
     : (['overdue', 'active', 'paid'] as DebtStatus[])
-        .map((s) => [s, (data?.items ?? []).filter((d) => d.status === s)] as [DebtStatus, Debt[]])
+        .map(
+          (s) =>
+            [s, (data?.items ?? []).filter((d) => d.status === s)] as [
+              DebtStatus,
+              Debt[],
+            ],
+        )
         .filter(([, rows]) => rows.length > 0);
 
   return (
@@ -203,11 +230,19 @@ export function DebtsPage() {
             <span className="flex flex-wrap items-center gap-x-4 gap-y-1 font-normal">
               <span>
                 Tôi đang nợ{' '}
-                <Money value={data.totals.iOwe} signed="out" className="font-semibold" />
+                <Money
+                  value={data.totals.iOwe}
+                  signed="out"
+                  className="font-semibold"
+                />
               </span>
               <span>
                 Đang nợ tôi{' '}
-                <Money value={data.totals.owesMe} signed="in" className="font-semibold" />
+                <Money
+                  value={data.totals.owesMe}
+                  signed="in"
+                  className="font-semibold"
+                />
               </span>
               <span className="text-muted">
                 Lãi vay đã trả <Money value={data.totals.interestPaid} />
@@ -240,7 +275,8 @@ export function DebtsPage() {
                       onEdit={() => setEditing(d)}
                       onPay={(prefill) => setPaying({ debt: d, prefill })}
                       onDelete={() =>
-                        confirm(`Xoá khoản nợ của ${d.person.name}?`) && remove.mutate(d.id)
+                        confirm(`Xoá khoản nợ của ${d.person.name}?`) &&
+                        remove.mutate(d.id)
                       }
                       onChanged={invalidate}
                     />
@@ -304,7 +340,8 @@ function DebtRow({
   const [open, setOpen] = useState(false);
 
   const removePayment = useMutation({
-    mutationFn: (paymentId: number) => api.delete(`/debts/${debt.id}/payments/${paymentId}`),
+    mutationFn: (paymentId: number) =>
+      api.delete(`/debts/${debt.id}/payments/${paymentId}`),
     onSuccess: onChanged,
     onError: (e) => alert(errorMessage(e)),
   });
@@ -337,15 +374,21 @@ function DebtRow({
 
         <span className="ml-auto flex items-center gap-4 text-sm">
           <span className="text-right">
-            <span className="block text-[10px] uppercase tracking-wide text-faint">Gốc</span>
+            <span className="block text-[10px] uppercase tracking-wide text-faint">
+              Gốc
+            </span>
             <Money value={debt.principal} />
           </span>
           <span className="text-right">
-            <span className="block text-[10px] uppercase tracking-wide text-faint">Đã trả</span>
+            <span className="block text-[10px] uppercase tracking-wide text-faint">
+              Đã trả
+            </span>
             <Money value={debt.paid} />
           </span>
           <span className="text-right">
-            <span className="block text-[10px] uppercase tracking-wide text-faint">Còn lại</span>
+            <span className="block text-[10px] uppercase tracking-wide text-faint">
+              Còn lại
+            </span>
             <Money value={debt.remaining} className="font-semibold" />
           </span>
         </span>
@@ -372,14 +415,19 @@ function DebtRow({
           <div className="mb-3 text-xs text-muted">
             Chuyển tiền {dayVN(debt.date)} · Hạn {dayVN(debt.dueDate)}
             {debt.interestNote ? ` · Lãi: ${debt.interestNote}` : ''}
-            {debt.interestPaid ? ` · Đã trả lãi ${debt.interestPaid.toLocaleString('vi-VN')}` : ''}
+            {debt.interestPaid
+              ? ` · Đã trả lãi ${debt.interestPaid.toLocaleString('vi-VN')}`
+              : ''}
             {debt.note ? ` · ${debt.note}` : ''}
           </div>
           {debt.interestMethod !== 'none' && (
             <ScheduleTable
               debtId={debt.id}
               onPayPeriod={(p) =>
-                onPay({ principalAmount: p.principal, interestAmount: p.interest })
+                onPay({
+                  principalAmount: p.principal,
+                  interestAmount: p.interest,
+                })
               }
             />
           )}
@@ -394,14 +442,16 @@ function DebtRow({
                     <th className={thCls}>Đã trả ngày</th>
                     <th className={`${thCls} text-right`}>Gốc</th>
                     <th className={`${thCls} text-right`}>Lãi</th>
-                    <th className={thCls}>Ghi chú</th>
+                    <th className={`${thCls} ${colSm}`}>Ghi chú</th>
                     <th className={thCls} />
                   </tr>
                 </thead>
                 <tbody>
                   {debt.payments.map((p) => (
                     <tr key={p.id} className={trCls}>
-                      <td className={`${tdCls} tnum whitespace-nowrap`}>{dayVN(p.date)}</td>
+                      <td className={`${tdCls} tnum whitespace-nowrap`}>
+                        {dayVN(p.date)}
+                      </td>
                       <td className={`${tdCls} text-right`}>
                         <Money value={p.principalAmount} />
                       </td>
@@ -412,14 +462,15 @@ function DebtRow({
                           <span className="text-faint">—</span>
                         )}
                       </td>
-                      <td className={`${tdCls} text-muted`}>{p.note ?? ''}</td>
+                      <td className={`${tdCls} ${colSm} text-muted`}>{p.note ?? ''}</td>
                       <td className={`${tdCls} text-right`}>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() =>
-                            confirm('Xoá lần trả này? Giao dịch tiền tương ứng cũng bị xoá.') &&
-                            removePayment.mutate(p.id)
+                            confirm(
+                              'Xoá lần trả này? Giao dịch tiền tương ứng cũng bị xoá.',
+                            ) && removePayment.mutate(p.id)
                           }
                         >
                           Xoá
@@ -458,14 +509,18 @@ function ScheduleTable({
   const [showAll, setShowAll] = useState(false);
   const q = useQuery({
     queryKey: ['schedule', debtId],
-    queryFn: async () => (await api.get<LoanSchedule>(`/debts/${debtId}/schedule`)).data,
+    queryFn: async () =>
+      (await api.get<LoanSchedule>(`/debts/${debtId}/schedule`)).data,
   });
 
   if (q.isLoading) return <Skeleton rows={3} />;
   if (q.isError || !q.data) return null;
 
   const { periods, summary } = q.data;
-  const firstUnpaid = Math.max(0, periods.findIndex((p) => p.status !== 'paid'));
+  const firstUnpaid = Math.max(
+    0,
+    periods.findIndex((p) => p.status !== 'paid'),
+  );
   const shown = showAll ? periods : periods.slice(firstUnpaid, firstUnpaid + 6);
   const donePct = summary.totalPayment
     ? Math.min(100, Math.round((summary.paidTotal / summary.totalPayment) * 100))
@@ -501,7 +556,10 @@ function ScheduleTable({
 
         <div className="mt-2 flex items-center gap-3">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-canvas">
-            <div className="h-full rounded-full bg-brand" style={{ width: `${donePct}%` }} />
+            <div
+              className="h-full rounded-full bg-brand"
+              style={{ width: `${donePct}%` }}
+            />
           </div>
           <span className="tnum text-[11px] text-muted">
             đã trả {summary.paidTotal.toLocaleString('vi-VN')} /{' '}
@@ -518,34 +576,44 @@ function ScheduleTable({
         <table className={tableCls}>
           <thead className={theadCls}>
             <tr>
-              <th className={thCls}>Kỳ</th>
+              <th className={`${thCls} ${colSm}`}>Kỳ</th>
               <th className={thCls}>Đến hạn</th>
-              <th className={`${thCls} text-right`}>Dư nợ đầu kỳ</th>
-              <th className={`${thCls} text-right`}>Gốc</th>
-              <th className={`${thCls} text-right`}>Lãi</th>
+              <th className={`${thCls} ${colMd} text-right`}>Dư nợ đầu kỳ</th>
+              <th className={`${thCls} ${colMd} text-right`}>Gốc</th>
+              <th className={`${thCls} ${colMd} text-right`}>Lãi</th>
               <th className={`${thCls} text-right`}>Phải trả</th>
-              <th className={thCls}>Tình trạng</th>
+              <th className={`${thCls} ${colSm}`}>Tình trạng</th>
               <th className={thCls} />
             </tr>
           </thead>
           <tbody>
             {shown.map((p) => (
               <tr key={p.index} className={`${trCls} group`}>
-                <td className={`${tdCls} tnum text-faint`}>{p.index}</td>
-                <td className={`${tdCls} tnum whitespace-nowrap`}>{dayVN(p.dueDate)}</td>
-                <td className={`${tdCls} text-right text-muted`}>
+                <td className={`${tdCls} ${colSm} tnum text-faint`}>{p.index}</td>
+                <td className={`${tdCls} tnum`}>
+                  <DayCell iso={p.dueDate} />
+                  {/* Gốc/lãi và tình trạng bị ẩn trên điện thoại — gộp xuống đây. */}
+                  <div className="text-[11px] font-normal text-faint md:hidden">
+                    gốc {p.principal.toLocaleString('vi-VN')} + lãi{' '}
+                    {p.interest.toLocaleString('vi-VN')}
+                  </div>
+                  <div className="text-[11px] font-normal text-faint sm:hidden">
+                    {PERIOD_BADGE[p.status].label}
+                  </div>
+                </td>
+                <td className={`${tdCls} ${colMd} text-right text-muted`}>
                   <Money value={p.opening} />
                 </td>
-                <td className={`${tdCls} text-right`}>
+                <td className={`${tdCls} ${colMd} text-right`}>
                   <Money value={p.principal} />
                 </td>
-                <td className={`${tdCls} text-right`}>
+                <td className={`${tdCls} ${colMd} text-right`}>
                   <Money value={p.interest} />
                 </td>
                 <td className={`${tdCls} text-right font-semibold`}>
                   <Money value={p.payment} />
                 </td>
-                <td className={`${tdCls} whitespace-nowrap`}>
+                <td className={`${tdCls} ${colSm} whitespace-nowrap`}>
                   <Badge tone={PERIOD_BADGE[p.status].tone}>
                     {PERIOD_BADGE[p.status].label}
                   </Badge>
@@ -561,10 +629,10 @@ function ScheduleTable({
                     <Button
                       size="sm"
                       variant="soft"
-                      className="opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+                      className="transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                       onClick={() => onPayPeriod(p)}
                     >
-                      Ghi trả kỳ này
+                      Ghi trả<span className="hidden sm:inline"> kỳ này</span>
                     </Button>
                   )}
                 </td>
@@ -602,7 +670,8 @@ function DebtForm({
     interestRate: value?.interestRate != null ? String(value.interestRate) : '',
     fixedInterestAmount:
       value?.fixedInterestAmount != null ? String(value.fixedInterestAmount) : '',
-    contractPayment: value?.contractPayment != null ? String(value.contractPayment) : '',
+    contractPayment:
+      value?.contractPayment != null ? String(value.contractPayment) : '',
     contractLastPayment:
       value?.contractLastPayment != null ? String(value.contractLastPayment) : '',
     termMonths: value?.termMonths != null ? String(value.termMonths) : '',
@@ -674,13 +743,16 @@ function DebtForm({
             ))}
           </Select>
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Chiều nợ">
             <Select
               disabled={!!value}
               value={form.direction}
               onChange={(e) =>
-                setForm({ ...form, direction: e.target.value as 'i_owe' | 'owes_me' })
+                setForm({
+                  ...form,
+                  direction: e.target.value as 'i_owe' | 'owes_me',
+                })
               }
             >
               <option value="i_owe">Tôi nợ họ (đi vay)</option>
@@ -714,7 +786,7 @@ function DebtForm({
         </div>
         {form.direction === 'i_owe' && (
           <>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Loại vay">
                 <Select
                   value={form.loanType}
@@ -731,7 +803,10 @@ function DebtForm({
                 <Select
                   value={form.interestMethod}
                   onChange={(e) =>
-                    setForm({ ...form, interestMethod: e.target.value as InterestMethod })
+                    setForm({
+                      ...form,
+                      interestMethod: e.target.value as InterestMethod,
+                    })
                   }
                 >
                   {Object.entries(METHOD_LABEL).map(([k, label]) => (
@@ -744,7 +819,7 @@ function DebtForm({
             </div>
 
             {hasSchedule && (
-              <div className="grid grid-cols-2 gap-3 rounded-lg border border-line bg-canvas p-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-lg border border-line bg-canvas p-3">
                 {needsRate && (
                   <Field label="Lãi suất (%/tháng)">
                     <Input
@@ -753,7 +828,9 @@ function DebtForm({
                       min={0}
                       required
                       value={form.interestRate}
-                      onChange={(e) => setForm({ ...form, interestRate: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, interestRate: e.target.value })
+                      }
                     />
                   </Field>
                 )}
@@ -765,7 +842,10 @@ function DebtForm({
                       required
                       value={form.fixedInterestAmount}
                       onChange={(e) =>
-                        setForm({ ...form, fixedInterestAmount: e.target.value })
+                        setForm({
+                          ...form,
+                          fixedInterestAmount: e.target.value,
+                        })
                       }
                     />
                   </Field>
@@ -789,14 +869,17 @@ function DebtForm({
                         min={0}
                         value={form.contractLastPayment}
                         onChange={(e) =>
-                          setForm({ ...form, contractLastPayment: e.target.value })
+                          setForm({
+                            ...form,
+                            contractLastPayment: e.target.value,
+                          })
                         }
                       />
                     </Field>
                     <p className="col-span-2 text-xs text-muted">
                       Chép đúng số trong sao kê của bên cho vay. Mỗi bên làm tròn một
-                      kiểu nên chỉ cách này mới khớp tuyệt đối; app tự suy ra tiền lãi
-                      = tiền trả − gốc.
+                      kiểu nên chỉ cách này mới khớp tuyệt đối; app tự suy ra tiền lãi =
+                      tiền trả − gốc.
                     </p>
                   </>
                 )}
@@ -859,7 +942,8 @@ function DebtForm({
           />
           <span className="text-sm">
             <span className="font-medium">
-              Cộng tiền {form.direction === 'i_owe' ? 'vay' : 'cho vay'} vào số dư hiện tại
+              Cộng tiền {form.direction === 'i_owe' ? 'vay' : 'cho vay'} vào số dư hiện
+              tại
             </span>
             <span className="mt-1 block text-xs text-muted">
               {form.affectsBalance ? (
@@ -939,7 +1023,7 @@ function PaymentForm({
             <span className="text-muted"> · Lãi suất: {debt.interestNote}</span>
           )}
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Ngày trả">
             <Input
               type="date"
@@ -975,8 +1059,8 @@ function PaymentForm({
           />
         </Field>
         <p className="rounded-lg border border-line bg-canvas p-3 text-xs text-muted">
-          Tiền gốc làm giảm dư nợ nhưng không tính vào lãi/lỗ. Tiền lãi thì ngược lại: là
-          chi phí thật, tính vào lãi/lỗ của công việc gắn với khoản nợ.
+          Tiền gốc làm giảm dư nợ nhưng không tính vào lãi/lỗ. Tiền lãi thì ngược lại:
+          là chi phí thật, tính vào lãi/lỗ của công việc gắn với khoản nợ.
         </p>
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" onClick={onClose}>

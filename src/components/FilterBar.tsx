@@ -89,14 +89,19 @@ export function FilterBar({
           </Button>
         )}
 
-        <div className="ml-auto flex gap-2">{children}</div>
+        {/* Điện thoại: nút hành động xuống hàng riêng, chia đều bề ngang. */}
+        <div className="flex w-full gap-2 [&>*]:flex-1 sm:ml-auto sm:w-auto sm:[&>*]:flex-none">
+          {children}
+        </div>
       </div>
 
       {open && rest.length > 0 && (
         <div className="mt-3 grid grid-cols-2 gap-3 border-t border-line pt-3 sm:grid-cols-3 lg:grid-cols-4">
           {rest.map((f) => (
             <label key={f.key} className="block">
-              <span className="mb-1 block text-xs font-medium text-muted">{f.label}</span>
+              <span className="mb-1 block text-xs font-medium text-muted">
+                {f.label}
+              </span>
               {f.type === 'select' ? (
                 <Select
                   value={values[f.key] ?? ''}

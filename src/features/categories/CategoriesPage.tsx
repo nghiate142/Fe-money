@@ -12,6 +12,7 @@ import {
   Input,
   Modal,
   Pager,
+  RowActions,
   Select,
   Skeleton,
   tableCls,
@@ -105,18 +106,12 @@ export function CategoriesPage() {
                   </td>
                   <td className={`${tdCls} text-right`}>
                     {!c.code && (
-                      <span className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(c)}>
-                          Sửa
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => confirm('Xoá danh mục này?') && remove.mutate(c.id)}
-                        >
-                          Xoá
-                        </Button>
-                      </span>
+                      <RowActions
+                        onEdit={() => setEditing(c)}
+                        onDelete={() =>
+                          confirm('Xoá danh mục này?') && remove.mutate(c.id)
+                        }
+                      />
                     )}
                   </td>
                 </tr>

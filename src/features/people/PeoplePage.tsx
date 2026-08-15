@@ -13,8 +13,10 @@ import {
   Modal,
   Money,
   Pager,
+  RowActions,
   Skeleton,
   tableCls,
+  colSm,
   tdCls,
   theadCls,
   thCls,
@@ -96,10 +98,10 @@ export function PeoplePage() {
               <thead className={theadCls}>
                 <tr>
                   <th className={thCls}>Tên</th>
-                  <th className={thCls}>Điện thoại</th>
+                  <th className={`${thCls} ${colSm}`}>Điện thoại</th>
                   <th className={`${thCls} text-right`}>Tôi đang nợ</th>
                   <th className={`${thCls} text-right`}>Đang nợ tôi</th>
-                  <th className={`${thCls} text-right`}>Số khoản</th>
+                  <th className={`${thCls} ${colSm} text-right`}>Số khoản</th>
                   <th className={thCls} />
                 </tr>
               </thead>
@@ -115,7 +117,7 @@ export function PeoplePage() {
                       </Link>
                       {p.note && <div className="text-xs text-faint">{p.note}</div>}
                     </td>
-                    <td className={`${tdCls} tnum text-muted`}>
+                    <td className={`${tdCls} ${colSm} tnum text-muted`}>
                       {p.phone ?? <span className="text-faint">—</span>}
                     </td>
                     <td className={`${tdCls} text-right`}>
@@ -132,20 +134,16 @@ export function PeoplePage() {
                         <span className="text-faint">—</span>
                       )}
                     </td>
-                    <td className={`${tdCls} tnum text-right text-muted`}>{p.debtCount}</td>
+                    <td className={`${tdCls} ${colSm} tnum text-right text-muted`}>
+                      {p.debtCount}
+                    </td>
                     <td className={`${tdCls} text-right whitespace-nowrap`}>
-                      <span className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>
-                          Sửa
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => confirm(`Xoá ${p.name}?`) && remove.mutate(p.id)}
-                        >
-                          Xoá
-                        </Button>
-                      </span>
+                      <RowActions
+                        onEdit={() => setEditing(p)}
+                        onDelete={() =>
+                          confirm(`Xoá ${p.name}?`) && remove.mutate(p.id)
+                        }
+                      />
                     </td>
                   </tr>
                 ))}
