@@ -6,6 +6,7 @@ import {
   type Category,
   type Currency as CurrencyMeta,
   type Page,
+  type Person,
   type Project,
   type RateResult,
   type Transaction,
@@ -49,6 +50,7 @@ const DEFAULTS = {
   scope: '',
   categoryId: '',
   projectId: '',
+  personId: '',
   from: '',
   to: '',
   amountMin: '',
@@ -86,6 +88,10 @@ export function TransactionsPage() {
     queryKey: ['projects', 'all'],
     queryFn: async () =>
       (await api.get<Page<Project>>('/projects?limit=200')).data.items,
+  });
+  const people = useQuery({
+    queryKey: ['people', 'all'],
+    queryFn: async () => (await api.get<Page<Person>>('/people?limit=200')).data.items,
   });
 
   const qs = queryString(values);
@@ -153,6 +159,19 @@ export function TransactionsPage() {
         { value: '', label: 'Tất cả' },
         { value: 'none', label: '(không thuộc việc nào)' },
         ...(projects.data ?? []).map((p) => ({
+          value: String(p.id),
+          label: p.name,
+        })),
+      ],
+    },
+    {
+      key: 'personId',
+      label: 'Người',
+      type: 'select',
+      options: [
+        { value: '', label: 'Tất cả' },
+        { value: 'none', label: '(không gắn ai)' },
+        ...(people.data ?? []).map((p) => ({
           value: String(p.id),
           label: p.name,
         })),
@@ -265,7 +284,9 @@ export function TransactionsPage() {
                         <span className="font-medium">{t.category?.name}</span>
                         {/* Cột Công việc / Ghi chú bị ẩn trên điện thoại — gộp vào đây. */}
                         <div className="truncate text-[11px] text-faint md:hidden">
-                          {[t.project?.name, t.note].filter(Boolean).join(' · ')}
+                          {[t.project?.name, t.person?.name, t.note]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </div>
                         {t.nature !== 'operating' &&
                           NATURE_LABEL[t.nature] !== t.category?.name && (
@@ -276,6 +297,9 @@ export function TransactionsPage() {
                       </td>
                       <td className={`${tdCls} ${colMd} text-muted`}>
                         {t.project?.name ?? <span className="text-faint">Cá nhân</span>}
+                        {t.person && (
+                          <div className="text-[11px] text-faint">{t.person.name}</div>
+                        )}
                       </td>
                       <td
                         className={`${tdCls} ${colMd} max-w-[22ch] truncate text-muted`}
@@ -344,6 +368,7 @@ export function TransactionsPage() {
           value={editing}
           categories={categories.data ?? []}
           projects={projects.data ?? []}
+          people={people.data ?? []}
           onClose={() => setEditing(undefined)}
           onSaved={() => {
             setEditing(undefined);
@@ -371,12 +396,14 @@ function TransactionForm({
   value,
   categories,
   projects,
+  people,
   onClose,
   onSaved,
 }: {
   value: Transaction | null;
   categories: Category[];
   projects: Project[];
+  people: Person[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -399,6 +426,7 @@ function TransactionForm({
     fee: value?.fee ? String(value.fee) : '',
     categoryId: value ? String(value.categoryId) : '',
     projectId: value?.projectId ? String(value.projectId) : '',
+    personId: value?.personId ? String(value.personId) : '',
     note: value?.note ?? '',
   });
 
@@ -438,6 +466,7 @@ function TransactionForm({
         fee,
         categoryId: Number(form.categoryId),
         projectId: form.projectId ? Number(form.projectId) : null,
+        personId: form.personId ? Number(form.personId) : null,
         note: form.note || undefined,
       };
       return value
@@ -593,6 +622,22 @@ function TransactionForm({
           >
             <option value="">— không thuộc việc nào —</option>
             {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field
+          label="Người (có thể bỏ trống)"
+          hint="Trả cho ai / nhận từ ai — chỉ để thống kê, không đụng tới dư nợ"
+        >
+          <Select
+            value={form.personId}
+            onChange={(e) => setForm({ ...form, personId: e.target.value })}
+          >
+            <option value="">— không gắn ai —</option>
+            {people.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>

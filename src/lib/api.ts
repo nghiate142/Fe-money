@@ -92,6 +92,9 @@ export type Transaction = {
   category: Category;
   projectId: number | null;
   project: { id: number; name: string } | null;
+  /** Trả cho ai / nhận từ ai — không dính tới dư nợ. */
+  personId: number | null;
+  person: { id: number; name: string } | null;
   /** Khác null = giao dịch sinh từ khoản nợ, chỉ sửa được ở tab Nợ. */
   debtId: number | null;
   debtPaymentId: number | null;

@@ -17,8 +17,12 @@ import {
   api,
   LOAN_TYPE_LABEL,
   METHOD_LABEL,
+  type Category,
   type InterestMethod,
   type LoanType,
+  type Page,
+  type Person,
+  type Project,
 } from '../../lib/api';
 import { dayVN } from '../../lib/format';
 import { queryString, useFilters } from '../../lib/useFilters';
@@ -49,12 +53,13 @@ import {
 } from 'lucide-react';
 import { money } from '../../lib/format';
 
-const DEFAULTS = { from: '', to: '' };
-
-const FIELDS: FilterField[] = [
-  { key: 'from', label: 'Từ ngày', type: 'date' },
-  { key: 'to', label: 'Đến ngày', type: 'date' },
-];
+const DEFAULTS = {
+  from: '',
+  to: '',
+  projectId: '',
+  categoryId: '',
+  personId: '',
+};
 
 const COLORS = [
   '#5b5bd6',
@@ -84,6 +89,54 @@ type Overview = {
 export function OverviewPage() {
   const { values, set, reset, activeCount } = useFilters(DEFAULTS);
   const qs = queryString(values);
+
+  // Danh sách để đổ vào ô lọc — cùng query key với các tab khác nên dùng lại cache.
+  const projects = useQuery({
+    queryKey: ['projects', 'all'],
+    queryFn: async () =>
+      (await api.get<Page<Project>>('/projects?limit=200')).data.items,
+  });
+  const categories = useQuery({
+    queryKey: ['categories', 'all'],
+    queryFn: async () =>
+      (await api.get<Page<Category>>('/categories?limit=200')).data.items,
+  });
+  const people = useQuery({
+    queryKey: ['people', 'all'],
+    queryFn: async () => (await api.get<Page<Person>>('/people?limit=200')).data.items,
+  });
+
+  const fields: FilterField[] = [
+    { key: 'from', label: 'Từ ngày', type: 'date' },
+    { key: 'to', label: 'Đến ngày', type: 'date' },
+    {
+      key: 'projectId',
+      label: 'Công việc',
+      type: 'select',
+      options: [
+        { value: '', label: 'Tất cả' },
+        ...(projects.data ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+      ],
+    },
+    {
+      key: 'categoryId',
+      label: 'Danh mục',
+      type: 'select',
+      options: [
+        { value: '', label: 'Tất cả' },
+        ...(categories.data ?? []).map((c) => ({ value: String(c.id), label: c.name })),
+      ],
+    },
+    {
+      key: 'personId',
+      label: 'Người',
+      type: 'select',
+      options: [
+        { value: '', label: 'Tất cả' },
+        ...(people.data ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+      ],
+    },
+  ];
 
   const overview = useQuery({
     queryKey: ['overview', qs],
@@ -123,12 +176,19 @@ export function OverviewPage() {
       ).data,
   });
   const byPerson = useQuery({
-    queryKey: ['by-person'],
+    queryKey: ['by-person', qs],
     queryFn: async () =>
       (
         await api.get<
-          { personId: number; name: string; iOwe: number; owesMe: number }[]
-        >('/reports/by-person')
+          {
+            personId: number;
+            name: string;
+            iOwe: number;
+            owesMe: number;
+            income: number;
+            expense: number;
+          }[]
+        >(`/reports/by-person?${qs}`)
       ).data,
   });
 
@@ -159,12 +219,12 @@ export function OverviewPage() {
 
   const o = overview.data;
   const expensePie = (byCategory.data ?? []).filter((c) => c.kind === 'expense');
-  const projects = (byProject.data ?? []).filter((p) => p.projectId !== null);
+  const projectRows = (byProject.data ?? []).filter((p) => p.projectId !== null);
 
   return (
     <>
       <FilterBar
-        fields={FIELDS}
+        fields={fields}
         values={values}
         onChange={set}
         onReset={reset}
@@ -376,7 +436,7 @@ export function OverviewPage() {
         </Card>
 
         <Card title="Lãi / lỗ theo công việc" flush>
-          {!projects.length ? (
+          {!projectRows.length ? (
             <Empty>Chưa có dữ liệu.</Empty>
           ) : (
             <table className={tableCls}>
@@ -389,7 +449,7 @@ export function OverviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {[...projects]
+                {[...projectRows]
                   .sort((a, b) => b.profit - a.profit)
                   .map((p) => (
                     <tr key={String(p.projectId)} className={trCls}>
@@ -417,16 +477,18 @@ export function OverviewPage() {
           )}
         </Card>
 
-        <Card title="Dư nợ theo người" flush>
+        <Card title="Theo người" flush hint="dư nợ + tiền đã thu/chi gắn người">
           {!byPerson.data?.length ? (
-            <Empty>Không còn ai dư nợ.</Empty>
+            <Empty>Chưa có ai dư nợ hay phát sinh thu chi.</Empty>
           ) : (
             <table className={tableCls}>
               <thead className={theadCls}>
                 <tr>
                   <th className={thCls}>Người</th>
-                  <th className={`${thCls} text-right`}>Tôi nợ</th>
-                  <th className={`${thCls} text-right`}>Nợ tôi</th>
+                  <th className={`${thCls} ${colSm} text-right`}>Tôi nợ</th>
+                  <th className={`${thCls} ${colSm} text-right`}>Nợ tôi</th>
+                  <th className={`${thCls} ${colSm} text-right`}>Đã thu</th>
+                  <th className={`${thCls} text-right`}>Đã chi</th>
                 </tr>
               </thead>
               <tbody>
@@ -439,17 +501,39 @@ export function OverviewPage() {
                       >
                         {p.name}
                       </Link>
+                      {/* Cột nợ ẩn trên điện thoại — nhắc lại ở đây. */}
+                      {(p.iOwe > 0 || p.owesMe > 0) && (
+                        <div className="text-[11px] text-faint sm:hidden">
+                          {p.iOwe > 0 && `tôi nợ ${p.iOwe.toLocaleString('vi-VN')}`}
+                          {p.iOwe > 0 && p.owesMe > 0 && ' · '}
+                          {p.owesMe > 0 && `nợ tôi ${p.owesMe.toLocaleString('vi-VN')}`}
+                        </div>
+                      )}
                     </td>
-                    <td className={`${tdCls} text-right`}>
+                    <td className={`${tdCls} ${colSm} text-right`}>
                       {p.iOwe ? (
                         <Money value={p.iOwe} signed="out" />
                       ) : (
                         <span className="text-faint">—</span>
                       )}
                     </td>
-                    <td className={`${tdCls} text-right`}>
+                    <td className={`${tdCls} ${colSm} text-right`}>
                       {p.owesMe ? (
                         <Money value={p.owesMe} signed="in" />
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
+                    <td className={`${tdCls} ${colSm} text-right`}>
+                      {p.income ? (
+                        <Money value={p.income} signed="in" />
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
+                    <td className={`${tdCls} text-right font-semibold`}>
+                      {p.expense ? (
+                        <Money value={p.expense} signed="out" />
                       ) : (
                         <span className="text-faint">—</span>
                       )}
